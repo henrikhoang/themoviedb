@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">TheMovieDb</string>
+    <string name="base_url">http://www.omdbapi.com</string>
 </resources>
