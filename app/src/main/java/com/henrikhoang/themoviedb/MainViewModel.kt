@@ -1,14 +1,13 @@
 package com.henrikhoang.themoviedb
 
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -17,14 +16,11 @@ class MainViewModel @Inject constructor(
     private val repository: Repository
 ): ViewModel() {
 
-    private val _uiState = MutableStateFlow(UiState())
-    val uiState = _uiState.asStateFlow()
     var currentPage: Int = INITIAL_PAGE
     private var searchDebounceJob: Job? = null
 
-    private fun updateState(block: (UiState) -> UiState) {
-        _uiState.update(block)
-    }
+    private var _uiState = MutableLiveData<UiState>()
+    val uiState: LiveData<UiState> get() = _uiState
 
     fun updateQuery(query: String, refresh: Boolean) {
         searchDebounceJob?.cancel()
@@ -35,19 +31,25 @@ class MainViewModel @Inject constructor(
     }
 
     private fun getMovies(query: String = "", refresh: Boolean) {
-        currentPage = if (refresh) INITIAL_PAGE else currentPage++
         viewModelScope.launch {
             runSuspendCatching {
-                repository.queryMovie(query = query, page = currentPage, type = TYPE)
+                currentPage = if (refresh) {
+                    INITIAL_PAGE
+                } else {
+                    currentPage++
+                }
+                val page = currentPage
+                repository.queryMovie(query = query, page = page, type = TYPE)
             }.onSuccess {
                 if (refresh) {
-                    updateState { uiState -> uiState.copy(movies = it.search) }
+                    _uiState.postValue(UiState(it.search.orEmpty(), null, true))
                 } else {
-                    uiState.value.movies?.toMutableList()?.addAll(it.search.orEmpty())
-                    updateState { uiState -> uiState.copy(movies = uiState.movies) }
+                    val newList = uiState.value?.movies?.toMutableList()
+                    newList?.addAll(it.search.orEmpty())
+                    _uiState.postValue(UiState(newList, null, false))
                 }
             }.onFailure {
-                updateState { uiState -> uiState.copy(movies = null, error = it) }
+//                updateState { uiState -> uiState.copy(movies = null, error = it) }
             }
         }
     }
@@ -71,5 +73,6 @@ class MainViewModel @Inject constructor(
 
 data class UiState(
     val movies: List<MovieInfo>? = emptyList(),
-    val error: Throwable? = null
+    val error: Throwable? = null,
+    val refresh: Boolean = true
 )
