@@ -19,7 +19,7 @@ class MainViewModel @Inject constructor(
 
     private val _uiState = MutableStateFlow(UiState())
     val uiState = _uiState.asStateFlow()
-    var currentPage: Int = 0
+    var currentPage: Int = INITIAL_PAGE
     private var searchDebounceJob: Job? = null
 
     private fun updateState(block: (UiState) -> UiState) {
@@ -35,15 +35,15 @@ class MainViewModel @Inject constructor(
     }
 
     private fun getMovies(query: String = "", refresh: Boolean) {
-        currentPage = if (refresh) 0 else currentPage++
+        currentPage = if (refresh) INITIAL_PAGE else currentPage++
         viewModelScope.launch {
             runSuspendCatching {
                 repository.queryMovie(query = query, page = currentPage, type = TYPE)
             }.onSuccess {
                 if (refresh) {
-                    updateState { uiState -> uiState.copy(movies = it) }
+                    updateState { uiState -> uiState.copy(movies = it.search) }
                 } else {
-                    uiState.value.movies?.toMutableList()?.addAll(it)
+                    uiState.value.movies?.toMutableList()?.addAll(it.search.orEmpty())
                     updateState { uiState -> uiState.copy(movies = uiState.movies) }
                 }
             }.onFailure {
@@ -52,7 +52,7 @@ class MainViewModel @Inject constructor(
         }
     }
 
-    inline fun <R> runSuspendCatching(block: () -> R): Result<R> {
+    private inline fun <R> runSuspendCatching(block: () -> R): Result<R> {
         return try {
             Result.success(block())
         } catch(c: CancellationException) {
@@ -64,6 +64,7 @@ class MainViewModel @Inject constructor(
 
     companion object {
         const val TYPE = "movie"
+        const val INITIAL_PAGE = 1
     }
 
 }

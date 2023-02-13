@@ -6,10 +6,10 @@ import retrofit2.http.Query
 
 interface NetworkService {
 
-    @GET("")
+    @GET(".")
     suspend fun queryMovies(
         @Query("s") query: String,
         @Query("page") page: Int,
         @Query("type") type: String
-    ): Response<List<MovieInfo>>
+    ): Response<MoviesResponse>
 }

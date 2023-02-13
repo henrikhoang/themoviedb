@@ -5,16 +5,18 @@ import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFact
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
-import dagger.hilt.android.components.ActivityComponent
 import dagger.hilt.android.qualifiers.ApplicationContext
+import dagger.hilt.components.SingletonComponent
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.Json
+import okhttp3.Interceptor
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 
+
 @Module
-@InstallIn(ActivityComponent::class)
+@InstallIn(SingletonComponent::class)
 class NetworkModule {
 
     @OptIn(ExperimentalSerializationApi::class)
@@ -33,7 +35,23 @@ class NetworkModule {
     }
 
     @Provides
-    fun provideOkHttpClient(): OkHttpClient {
-        return OkHttpClient.Builder().build()
+    fun provideOkHttpClient(@ApplicationContext context: Context): OkHttpClient {
+        return OkHttpClient.Builder().addInterceptor(
+            Interceptor { chain ->
+                var request = chain.request()
+                val url =
+                    request.url.newBuilder()
+                        .addQueryParameter("apikey", context.getString(R.string.api_key)).build()
+                request = request.newBuilder().url(url).build()
+                chain.proceed(request)
+            }
+        ).build()
+    }
+
+    @Provides
+    fun provideJson(): Json {
+        return Json {
+            ignoreUnknownKeys = true
+        }
     }
 }

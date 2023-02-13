@@ -1,4 +1,5 @@
 <resources>
     <string name="app_name">TheMovieDb</string>
-    <string name="base_url">http://www.omdbapi.com</string>
+    <string name="base_url">https://www.omdbapi.com/</string>
+    <string name="api_key">b9bd48a6</string>
 </resources>
