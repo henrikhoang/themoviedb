@@ -29,7 +29,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun observeViewModel() {
         viewModel.uiState.observe(this) {
-            moviesAdapter.setData(it.movies.orEmpty(), it.refresh)
+            moviesAdapter.setData(it.movies.orEmpty())
         }
     }
 

@@ -29,14 +29,9 @@ class MoviesAdapter(
 
     override fun getItemCount(): Int = dataSet.size
 
-    fun setData(newData: List<MovieInfo>, refresh: Boolean) {
-        val newStartingPos = dataSet.lastIndex + 1
+    fun setData(newData: List<MovieInfo>) {
         dataSet = newData
-        if (refresh) {
-            notifyItemRangeChanged(0, newData.lastIndex)
-        } else {
-            notifyItemRangeInserted(newStartingPos, newData.lastIndex)
-        }
+        notifyDataSetChanged()
     }
 
     inner class MovieViewHolder(val itemView: View): ViewHolder(itemView) {

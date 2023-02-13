@@ -16,13 +16,18 @@ class MainViewModel @Inject constructor(
     private val repository: Repository
 ): ViewModel() {
 
-    var currentPage: Int = INITIAL_PAGE
+    var currentPage: Int = 1
     private var searchDebounceJob: Job? = null
 
     private var _uiState = MutableLiveData<UiState>()
     val uiState: LiveData<UiState> get() = _uiState
 
     fun updateQuery(query: String, refresh: Boolean) {
+        currentPage = if (refresh) {
+            1
+        } else {
+            currentPage + 1
+        }
         searchDebounceJob?.cancel()
         searchDebounceJob = viewModelScope.launch {
             delay(300L)
@@ -33,13 +38,7 @@ class MainViewModel @Inject constructor(
     private fun getMovies(query: String = "", refresh: Boolean) {
         viewModelScope.launch {
             runSuspendCatching {
-                currentPage = if (refresh) {
-                    INITIAL_PAGE
-                } else {
-                    currentPage++
-                }
-                val page = currentPage
-                repository.queryMovie(query = query, page = page, type = TYPE)
+                repository.queryMovie(query = query, page = currentPage, type = TYPE)
             }.onSuccess {
                 if (refresh) {
                     _uiState.postValue(UiState(it.search.orEmpty(), null, true))
@@ -49,7 +48,6 @@ class MainViewModel @Inject constructor(
                     _uiState.postValue(UiState(newList, null, false))
                 }
             }.onFailure {
-//                updateState { uiState -> uiState.copy(movies = null, error = it) }
             }
         }
     }
@@ -66,7 +64,6 @@ class MainViewModel @Inject constructor(
 
     companion object {
         const val TYPE = "movie"
-        const val INITIAL_PAGE = 1
     }
 
 }
